@@ -10,14 +10,16 @@ class Users(commands.Cog):
         self.bot = bot
         super().__init__()
     
-    @app_commands.command()
-    async def Wearing(self, interaction:discord.Interaction, playerID: int):
-        currentlyResponse = httpx.get( f"https://netisu.com/api/inventory/currently-wearing/{playerID}" ).json()
-        AvatarJsonResponse = httpx.get( f"https://netisu.com/api/users/avatar-json/{playerID}" ).json()
+    @app_commands.command(name="wearing", description="grab the skin of a selected player")
+    @app_commands.describe(player_id="Player ID whose skin/avatar you want to see")
+    async def wearing(self, interaction:discord.Interaction, player_id: float):
+        player_id = str(player_id)
+        currentlyResponse = httpx.get( f"https://netisu.com/api/inventory/currently-wearing/{player_id}" ).json()
+        AvatarJsonResponse = httpx.get( f"https://netisu.com/api/users/avatar-json/{player_id}" ).json()
 
         embed = discord.Embed(title=f"Currently Wearing",
                         url="https://netisu.com/@Player",
-                        description="> **This will retrieve all items listed in the [API](https://netisu.com/api/inventory/currently-wearing/6)**",
+                        description=f"> **This will retrieve all items listed in the [API](https://netisu.com/api/inventory/currently-wearing/{player_id})**",
                         colour=0x6900d1)
         
         avatarHashImage = AvatarJsonResponse.get("Hash")
