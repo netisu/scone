@@ -95,7 +95,7 @@ class Users(commands.Cog):
                 discord.SelectOption(label="Create Fetch", value="createfetch")
             ]
         )
-
+        
         async def select_callback(interaction: discord.Interaction):
             if menu.values[0] != "createfetch":
                 return
@@ -143,7 +143,7 @@ class Users(commands.Cog):
         }}
         equipFullAvatar();"""
             await interaction.response.send_message(f"```javascript\n{js_code}\n```", ephemeral=True)
-            
+
         menu.callback = select_callback
 
         view = discord.ui.View()
