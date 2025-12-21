@@ -143,6 +143,7 @@ class Users(commands.Cog):
         }}
         equipFullAvatar();"""
             await interaction.response.send_message(f"```javascript\n{js_code}\n```", ephemeral=True)
+            
         menu.callback = select_callback
 
         view = discord.ui.View()
