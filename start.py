@@ -17,11 +17,13 @@ async def loadCogs():
         if file.endswith(".py"):
             await bot.load_extension(f"cogs.{file[:-3]}")
 
+STATUS_MESSAGE = os.getenv("STATUS_MESSAGE")
+TOKEN = os.getenv("DISCORD_TOKEN")
 @bot.event
 async def on_ready():
     await loadCogs()
     await bot.tree.sync()
-    await bot.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.playing, name="Netisu"))
+    await bot.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.playing, name=STATUS_MESSAGE))
 
-TOKEN = os.getenv("DISCORD_TOKEN")
+
 bot.run(TOKEN)
