@@ -20,6 +20,7 @@ async def loadCogs():
 @bot.event
 async def on_ready():
     await loadCogs()
+    await bot.tree.sync()
     await bot.change_presence(status=discord.Status.idle, activity=discord.Activity(type=discord.ActivityType.playing, name="Netisu"))
 
 TOKEN = os.getenv("DISCORD_TOKEN")

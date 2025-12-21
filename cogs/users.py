@@ -10,8 +10,8 @@ class Users(commands.Cog):
         self.bot = bot
         super().__init__()
     
-    @commands.command()
-    async def Wearing(self, ctx:commands.Context, playerID):
+    @app_commands.command()
+    async def Wearing(self, interaction:discord.Interaction, playerID: int):
         currentlyResponse = httpx.get( f"https://netisu.com/api/inventory/currently-wearing/{playerID}" ).json()
         AvatarJsonResponse = httpx.get( f"https://netisu.com/api/users/avatar-json/{playerID}" ).json()
 
@@ -95,7 +95,7 @@ class Users(commands.Cog):
                 discord.SelectOption(label="Create Fetch", value="createfetch")
             ]
         )
-        
+
         async def select_callback(interaction: discord.Interaction):
             if menu.values[0] != "createfetch":
                 return
@@ -148,8 +148,10 @@ class Users(commands.Cog):
 
         view = discord.ui.View()
         view.add_item(menu)
-
-        await ctx.send(embed=embed, view=view)
+        await interaction.response.send_message(embed=embed, view=view)
 
 async def setup(bot):
     await bot.add_cog(Users(bot))
+
+async def getOnlyShowpieces():
+    return
