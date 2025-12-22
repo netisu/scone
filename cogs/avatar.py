@@ -184,6 +184,11 @@ class Users(commands.Cog):
             ]
         )
 
+        avatarData = {
+            "sparkles": -1,
+            "stars": -1
+        }
+        
         async def select_callback(interaction: discord.Interaction):
             choice = menu.values[0]
             if choice == "showpieces":
@@ -199,18 +204,19 @@ class Users(commands.Cog):
 
             elif choice == "charvalue":
                 await interaction.response.defer()
-                await interaction.followup.send( "This will take a while, please wait!", ephemeral=True )
 
+                if avatarData["sparkles"] < 0:
+                    await interaction.followup.send( "This will take a while, please wait!", ephemeral=True )
+
+                    avatarData["sparkles"] = await GetValue(equippedItems)
+                    avatarData["stars"] = int(avatarData["sparkles"] / 10)
 
                 embed.clear_fields()
-
-                totalSparkles = await GetValue(equippedItems)
-                totalStars = int(totalSparkles / 10)
 
                 embed.add_field(
                     name="**✨ Sparkles**",
                     value=(
-                        f"**`{totalSparkles}`**"
+                        f"**`{avatarData["sparkles"]}`**"
                     ),
                     inline=True
                 )
@@ -218,7 +224,7 @@ class Users(commands.Cog):
                 embed.add_field(
                     name="**🌟 Stars**",
                     value=(
-                        f"**`{totalStars}`**"
+                        f"**`{avatarData["stars"]}`**"
                     ),
                     inline=True
                 )
