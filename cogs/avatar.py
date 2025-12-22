@@ -5,9 +5,11 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from utils.getNetizenValue import GetValue
+
 def GetOnlyShowpieces(playerId: float, items):
-    exclusiveResponse = httpx.get("https://netisu.com/api/6/exclusive_all?page=1").json()
-    lastPage = exclusiveResponse["meta"]["last_page"]
+    inventoryResponse = httpx.get("https://netisu.com/api/6/exclusive_all?page=1").json()
+    lastPage = inventoryResponse["meta"]["last_page"]
 
     showpiecesItems = []
     for index in range(lastPage):
@@ -101,7 +103,8 @@ class Users(commands.Cog):
             "pants": "👖",
             "showpiece": "👑"
         }
-        
+
+        equippedItems = {}
         def createItemsField(onlyShowpieces: bool):
             embed.clear_fields()
             for item in currentlyResponse:
@@ -117,6 +120,9 @@ class Users(commands.Cog):
                     emoji = emoji_types["showpiece"]
 
                 def createItemTypeField():
+                    if id not in equippedItems:
+                        equippedItems[item_type] = id
+
                     embed.add_field(
                         name=f"**{emoji} {name}**",
                         value=(
@@ -191,6 +197,36 @@ class Users(commands.Cog):
                 colors = AvatarJsonResponse.get("RenderJson", {}).get("colors", {})
                 await interaction.response.send_message(f"```javascript\n{generateFetchCode(item_ids, colors)}\n```", ephemeral=True)
 
+            elif choice == "charvalue":
+                await interaction.response.defer()
+                await interaction.followup.send( "This will take a while, please wait!", ephemeral=True )
+
+
+                embed.clear_fields()
+
+                totalSparkles = await GetValue(equippedItems)
+                totalStars = int(totalSparkles / 10)
+
+                embed.add_field(
+                    name="**✨ Sparkles**",
+                    value=(
+                        f"**`{totalSparkles}`**"
+                    ),
+                    inline=True
+                )
+
+                embed.add_field(
+                    name="**🌟 Stars**",
+                    value=(
+                        f"**`{totalStars}`**"
+                    ),
+                    inline=True
+                )
+
+                await interaction.edit_original_response(
+                    content=None,
+                    embed=embed
+                )
             else:
                 createItemsField(False)
                 await interaction.response.edit_message(embed=embed)
