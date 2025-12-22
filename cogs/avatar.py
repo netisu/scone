@@ -169,7 +169,7 @@ class Users(commands.Cog):
                         value=f"[**`Market Link`**](https://netisu.com/market/item/{item_id}/{slug})",
                         inline=True
                     )
-                elif (itemsFilter and itemsFilter[-1] == "false"):
+                elif (not itemsFilter or itemsFilter[-1] == "false"):
                     embed.add_field(
                         name=f"**{emoji} {name}**",
                         value=f"[**`Market Link`**](https://netisu.com/market/item/{item_id}/{slug})",
