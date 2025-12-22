@@ -173,7 +173,7 @@ class Users(commands.Cog):
             options=[
                 discord.SelectOption(label="Show Normal Avatar", value="normal"),
                 discord.SelectOption(label="Show Only Showpieces", value="showpieces"),
-                discord.SelectOption(label="Character Value(w.i.p)", value="charValue"),
+                discord.SelectOption(label="Character Value(w.i.p)", value="charvalue"),
                 discord.SelectOption(label="Create Fetch", value="createfetch")
             ]
         )
