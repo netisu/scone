@@ -70,20 +70,25 @@ class Users(commands.Cog):
 
     @app_commands.command(name="wearing", description="grab the skin of a selected player")
     @app_commands.describe(user="Player ID whose skin/avatar you want to see")
+    
     async def wearing(self, interaction:discord.Interaction, user: float):
         user = str(user)
         currentlyResponse = httpx.get( f"https://netisu.com/api/inventory/currently-wearing/{user}" ).json()
         AvatarJsonResponse = httpx.get( f"https://netisu.com/api/users/avatar-json/{user}" ).json()
 
-        embed = discord.Embed(title=f"Currently Wearing",
-                        url="https://netisu.com/@Player",
-                        description=f"> **This will retrieve all items listed in the [API](https://netisu.com/api/inventory/currently-wearing/{user})**",
-                        colour=0x6900d1)
+        embed = discord.Embed(
+            title=f"Currently Wearing",
+            url="https://netisu.com/@Player",
+            description=f"> **This will retrieve all items listed in the [API](https://netisu.com/api/inventory/currently-wearing/{user})**",
+            colour=0x6900d1
+        )
         
         avatarHashImage = AvatarJsonResponse.get("Hash")
-        embed.set_author(name="Netisu Bot",
-                    url="https://netisu.com/",
-                    icon_url=f"https://cdn.netisu.com/thumbnails/{avatarHashImage}_headshot.png")
+        embed.set_author(
+            name="Netisu Bot",
+            url="https://netisu.com/",
+            icon_url=f"https://cdn.netisu.com/thumbnails/{avatarHashImage}_headshot.png"
+        )
         
         showpiecesItems = GetOnlyShowpieces(user, currentlyResponse)
         emoji_types = {
@@ -115,8 +120,6 @@ class Users(commands.Cog):
                     embed.add_field(
                         name=f"**{emoji} {name}**",
                         value=(
-                            #f"Type: **`{item_type.capitalize()}`**\n"
-                            #f"Market Link: [**`Market Link`**](https://netisu.com/market/item/{id}/{slug})"
                             f"[**`Market Link`**](https://netisu.com/market/item/{id}/{slug})"
                         ),
                         inline=True
@@ -164,16 +167,17 @@ class Users(commands.Cog):
 
         embed.set_thumbnail(url=f"https://cdn.netisu.com/thumbnails/{avatarHashImage}.png")
         embed.set_footer(text="Netisu Bot")
+
         menu = discord.ui.Select(
             placeholder="Avatar Options",
             options=[
                 discord.SelectOption(label="Show Normal Avatar", value="normal"),
                 discord.SelectOption(label="Show Only Showpieces", value="showpieces"),
+                discord.SelectOption(label="Character Value(w.i.p)", value="charValue"),
                 discord.SelectOption(label="Create Fetch", value="createfetch")
             ]
         )
 
-        #temp
         async def select_callback(interaction: discord.Interaction):
             choice = menu.values[0]
             if choice == "showpieces":
@@ -194,6 +198,7 @@ class Users(commands.Cog):
 
         view = discord.ui.View()
         view.add_item(menu)
+
         await interaction.response.send_message(embed=embed, view=view)
 
 async def setup(bot):
