@@ -112,7 +112,7 @@ class Users(commands.Cog):
     @app_commands.command(name="wearing", description="grab the skin of a selected player")
     @app_commands.describe(user="Player ID whose skin/avatar you want to see")
     
-    async def wearing(self, interaction:discord.Interaction, user: float):
+    async def wearing(self, OriginalInteraction:discord.Interaction, user: float):
         user = str(user)
         currentlyResponse = httpx.get( f"https://netisu.com/api/inventory/currently-wearing/{user}" ).json()
         AvatarJsonResponse = httpx.get( f"https://netisu.com/api/users/avatar-json/{user}" ).json()
@@ -238,6 +238,10 @@ class Users(commands.Cog):
         }
         
         async def select_callback(interaction: discord.Interaction):
+            if not interaction.user.id == OriginalInteraction.user.id:
+                await interaction.response.send_message("You can't mess with a UI that isn't yours :(", ephemeral=True)
+                return
+
             choice = menu.values[0]
             if choice == "filter":
 
@@ -248,11 +252,6 @@ class Users(commands.Cog):
                 filtersItems = await future
                 createItemsField(filtersItems)
                 await interaction.followup.edit_message(embed=embed, message_id=interaction.message.id)
-                #if createItemsField(True):
-                 #   await interaction.response.send_message("This player does not have any Showpiece equipped!", ephemeral=True)
-                #else:
-                #    await interaction.response.edit_message(embed=embed)
-
             elif choice == "createfetch":
                 item_ids = [item["id"] for item in currentlyResponse]
                 colors = AvatarJsonResponse.get("RenderJson", {}).get("colors", {})
@@ -298,7 +297,7 @@ class Users(commands.Cog):
         view = discord.ui.View()
         view.add_item(menu)
 
-        await interaction.response.send_message(embed=embed, view=view)
+        await OriginalInteraction.response.send_message(embed=embed, view=view)
 
 async def setup(bot):
     await bot.add_cog(Users(bot))
