@@ -177,7 +177,7 @@ class Users(commands.Cog):
                     )
 
 
-            if len(itemsFilter) == 0 or (itemsFilter and itemsFilter[-1] == "false"):
+            if len(itemsFilter) == 0:
                 colorsArray = AvatarJsonResponse["RenderJson"]["colors"]
                 parts_order = [
                     ("Head", "Head"),
