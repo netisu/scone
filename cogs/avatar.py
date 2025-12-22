@@ -6,23 +6,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from utils.getNetizenValue import GetValue
-
-def GetOnlyShowpieces(playerId: float, items):
-    inventoryResponse = httpx.get("https://netisu.com/api/6/exclusive_all?page=1").json()
-    lastPage = inventoryResponse["meta"]["last_page"]
-
-    showpiecesItems = []
-    for index in range(lastPage):
-        exclusiveResponse = httpx.get(f"https://netisu.com/api/6/exclusive_all?page={index}").json()
-        for exclusiveItem in exclusiveResponse["data"]:
-            exclusiveSlug = exclusiveItem.get("slug", "...")
-            for item in items:
-                slug = item.get("slug", "???")
-                if slug == exclusiveSlug:
-                    showpiecesItems.append(exclusiveSlug)
-        
-    return showpiecesItems
+from utils.getNetizenValue import GetSkinValue
+from utils.getNetizenValue import getUsername
 
 def generateFetchCode(item_ids, colors):
     return f"""async function equipFullAvatar() {{
@@ -104,22 +89,39 @@ class FilterModal(discord.ui.Modal, title="Item Filters"):
         await interaction.response.defer(ephemeral=True)
         self.future.set_result(filtersArray)
 
-class Users(commands.Cog):
+async def GetOnlyShowpieces(playerId: float, items):
+    async with httpx.AsyncClient() as client:
+        inventoryResponse = (await client.get(f"https://netisu.com/api/6/exclusive_all?page=1")).json()
+        lastPage = inventoryResponse["meta"]["last_page"]
+
+        showpiecesItems = []
+        for index in range(lastPage):
+            exclusiveResponse = (await client.get(f"https://netisu.com/api/6/exclusive_all?page={index}")).json()
+            for exclusiveItem in exclusiveResponse["data"]:
+                exclusiveSlug = exclusiveItem.get("slug", "...")
+                for item in items:
+                    slug = item.get("slug", "???")
+                    if slug == exclusiveSlug:
+                        showpiecesItems.append(exclusiveSlug)
+    return showpiecesItems
+
+class Avatar(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         super().__init__()
 
     @app_commands.command(name="wearing", description="grab the skin of a selected player")
     @app_commands.describe(user="Player ID whose skin/avatar you want to see")
-    
-    async def wearing(self, OriginalInteraction:discord.Interaction, user: float):
+    async def wearing(self, OriginalInteraction: discord.Interaction, user: int):
         user = str(user)
-        currentlyResponse = httpx.get( f"https://netisu.com/api/inventory/currently-wearing/{user}" ).json()
-        AvatarJsonResponse = httpx.get( f"https://netisu.com/api/users/avatar-json/{user}" ).json()
+        async with httpx.AsyncClient() as client:
+            currentlyResponse = (await client.get(f"https://netisu.com/api/inventory/currently-wearing/{user}")).json()
+            AvatarJsonResponse = (await client.get(f"https://netisu.com/api/users/avatar-json/{user}")).json()
 
+        username = await getUsername(AvatarJsonResponse["Hash"])
         embed = discord.Embed(
-            title=f"Currently Wearing",
-            url="https://netisu.com/@Player",
+            title=f"@{username} Currently Wearing",
+            url=f"https://netisu.com/@{username}",
             description=f"> **This will retrieve all items listed in the [API](https://netisu.com/api/inventory/currently-wearing/{user})**",
             colour=0x6900d1
         )
@@ -131,7 +133,7 @@ class Users(commands.Cog):
             icon_url=f"https://cdn.netisu.com/thumbnails/{avatarHashImage}_headshot.png"
         )
         
-        showpiecesItems = GetOnlyShowpieces(user, currentlyResponse)
+        showpiecesItems = await GetOnlyShowpieces(user, currentlyResponse)
         emoji_types = {
             "hat": "🎩",
             "addon": "📦",
@@ -218,10 +220,10 @@ class Users(commands.Cog):
         menu = discord.ui.Select(
             placeholder="Avatar Options",
             options=[
-                discord.SelectOption(label="Show Normal Avatar", value="normal"),
-                discord.SelectOption(label="Select a filter", value="filter"),
+                discord.SelectOption(label="Show Every Items", value="normal"),
                 discord.SelectOption(label="Estimate price of Avatar", value="charvalue"),
-                discord.SelectOption(label="Create Fetch", value="createfetch")
+                discord.SelectOption(label="Create Fetch", value="createfetch"),
+                discord.SelectOption(label="Select a filter", value="filter")
             ]
         )
 
@@ -239,7 +241,7 @@ class Users(commands.Cog):
         
         async def select_callback(interaction: discord.Interaction):
             if not interaction.user.id == OriginalInteraction.user.id:
-                await interaction.response.send_message("You can't mess with a UI that isn't yours :(", ephemeral=True)
+                await interaction.response.send_message("You can't mess with a UI that isn't yours", ephemeral=True)
                 return
 
             choice = menu.values[0]
@@ -263,7 +265,7 @@ class Users(commands.Cog):
                 if avatarData["sparkles"] < 0:
                     await interaction.followup.send( "This will take a while, please wait!", ephemeral=True )
 
-                    avatarData["sparkles"] = await GetValue(equippedItems)
+                    avatarData["sparkles"] = await GetSkinValue(equippedItems)
                     avatarData["stars"] = int(avatarData["sparkles"] / 10)
 
                 embed.clear_fields()
@@ -300,4 +302,4 @@ class Users(commands.Cog):
         await OriginalInteraction.response.send_message(embed=embed, view=view)
 
 async def setup(bot):
-    await bot.add_cog(Users(bot))
+    await bot.add_cog(Avatar(bot))
