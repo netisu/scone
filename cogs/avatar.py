@@ -127,7 +127,7 @@ class Users(commands.Cog):
 
                 if onlyShowpieces and slug in showpiecesItems:
                     createItemTypeField()
-                else:
+                elif not onlyShowpieces:
                     createItemTypeField()
 
             if not onlyShowpieces:
@@ -173,7 +173,7 @@ class Users(commands.Cog):
             options=[
                 discord.SelectOption(label="Show Normal Avatar", value="normal"),
                 discord.SelectOption(label="Show Only Showpieces", value="showpieces"),
-                discord.SelectOption(label="Character Value(w.i.p)", value="charvalue"),
+                discord.SelectOption(label="To estimate the price of Avatar", value="charvalue"),
                 discord.SelectOption(label="Create Fetch", value="createfetch")
             ]
         )
@@ -183,7 +183,8 @@ class Users(commands.Cog):
             if choice == "showpieces":
                 if createItemsField(True):
                     await interaction.response.send_message("This player does not have any Showpiece equipped!", ephemeral=True)
-                await interaction.response.edit_message(embed=embed)
+                else:
+                    await interaction.response.edit_message(embed=embed)
 
             elif choice == "createfetch":
                 item_ids = [item["id"] for item in currentlyResponse]
