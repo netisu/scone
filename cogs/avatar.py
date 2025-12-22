@@ -71,8 +71,8 @@ class FilterModal(discord.ui.Modal, title="Item Filters"):
         self.future = future 
         
     filters = discord.ui.TextInput(
-        label="Placeholder",
-        placeholder="hat, addon, tool, face",
+        label="Enter filter types",
+        placeholder="hat, addon, tool, face, tshirt, shirt, pants...",
         required=True,
         max_length=50
     )
@@ -81,7 +81,7 @@ class FilterModal(discord.ui.Modal, title="Item Filters"):
         text="Showpieces only?",
         description="Do you only want it to show showpieces?",
         component=discord.ui.Select(
-            placeholder="Choose a topic...",
+            placeholder="Boolean",
             options=[
                 discord.SelectOption(label='True', description="This will tell us that you only want to see showpieces", value="true"),
                 discord.SelectOption(label='False', description="This will tell us that you dont want to see showpieces", value="false")
