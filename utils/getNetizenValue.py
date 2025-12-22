@@ -40,6 +40,7 @@ async def GetProfileValue(userID, inventory):
         inventory = await getInventory(userID)
 
     totalSparkles = 0
+    totalSparklesRAP = 0
     async with httpx.AsyncClient() as client:
         for itemType in EveryItemTypes:
             lastPage = (await client.get(f"https://netisu.com/api/{userID}/{itemType}?page=1")).json()["meta"]["last_page"]
@@ -69,14 +70,7 @@ async def GetProfileValue(userID, inventory):
                     if inventory and ActualItemID in inventory:
                         inventory.remove(ActualItemID)
                         totalSparkles += itemData.get("cost_sparkles", 0)
-    return totalSparkles
 
-
-async def getProfileRAPValue(UserID, inventory):
-    if not inventory:
-        inventory = await getInventory(UserID)
-
-    totalSparkles = 0
     async with httpx.AsyncClient() as client:
         lastPage = (await client.get(
             f"https://netisu.com/api/items/{EveryItemTypes[0]}?sort=updated_at_desc&page=1"
@@ -91,9 +85,9 @@ async def getProfileRAPValue(UserID, inventory):
                 ActualItemID = itemData.get("id", 0)
                 if inventory and ActualItemID in inventory:
                     inventory.remove(ActualItemID)
-                    totalSparkles += itemData.get("cost_sparkles", 0)
-    return totalSparkles
+                    totalSparklesRAP += itemData.get("cost_sparkles", 0)
 
+    return [totalSparkles, totalSparklesRAP]
 
 async def getImageHash(userId):
     async with httpx.AsyncClient() as client:

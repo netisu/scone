@@ -10,8 +10,7 @@ from utils.getNetizenValue import getInventory
 from utils.getNetizenValue import getUsername
 from utils.getNetizenValue import getImageHash
 from utils.getNetizenValue import getUserDescription
-from utils.getNetizenValue import GetProfileValue
-from utils.getNetizenValue import getProfileRAPValue
+from utils.getNetizenValue import GetProfileValues
 
 class User(commands.Cog):
     def __init__(self, bot):
@@ -34,7 +33,12 @@ class User(commands.Cog):
 
         embed.set_author(name="Netisu Bot",
                         icon_url=f"https://cdn.netisu.com/thumbnails/{headshotImageHash}.png")
-
+        
+        description = await getUserDescription(headshotImageHash)
+        embed.add_field(name="**Description**",
+                        value=f"**`{description}`**",
+                        inline=True)
+        
         isOnline = str(httpx.get(f"https://netisu.com/api/users/online/{user}").json()["online"])
         embed.add_field(name="**Is Online**",
                         value=f"**`{isOnline}`**",
@@ -45,19 +49,13 @@ class User(commands.Cog):
                         value=f"**[`{len(inventory)}`](https://netisu.com/@{username}/inventory)**",
                         inline=True)
         
-        userValue = await GetProfileValue(user, inventory)
+        userPricesValues = await GetProfileValues(user, inventory)
         embed.add_field(name="**Sparkles Spent**",
-                        value=f"**`{userValue}`**",
+                        value=f"**`{userPricesValues[0]}`**",
                         inline=True)
         
-        description = await getUserDescription(headshotImageHash)
-        embed.add_field(name="**Description**",
-                        value=f"**`{description}`**",
-                        inline=True)
-        
-        rapValue = await getProfileRAPValue(user, inventory)
         embed.add_field(name="**Sparkles RAP Value**",
-                        value=f"**[`{rapValue}`](https://netisu.com/market)**",
+                        value=f"**[`{userPricesValues[1]}`](https://netisu.com/market)**",
                         inline=True)
 
         embed.set_thumbnail(url=f"https://cdn.netisu.com/thumbnails/{headshotImageHash}.png")
