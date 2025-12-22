@@ -1,4 +1,5 @@
 import httpx
+import asyncio
 import json
 
 import discord
@@ -64,6 +65,44 @@ def generateFetchCode(item_ids, colors):
         }}
         equipFullAvatar();"""
 
+class FilterModal(discord.ui.Modal, title="Item Filters"):
+    def __init__(self, future: asyncio.Future):
+        super().__init__()
+        self.future = future 
+        
+    filters = discord.ui.TextInput(
+        label="Placeholder",
+        placeholder="hat, addon, tool, face",
+        required=True,
+        max_length=50
+    )
+
+    showpieceOnly = discord.ui.Label(
+        text="Showpieces only?",
+        description="Do you only want it to show showpieces?",
+        component=discord.ui.Select(
+            placeholder="Choose a topic...",
+            options=[
+                discord.SelectOption(label='True', description="This will tell us that you only want to see showpieces", value="true"),
+                discord.SelectOption(label='False', description="This will tell us that you dont want to see showpieces", value="false")
+            ],
+        ),
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        raw = self.filters.value.lower()
+        filtersArray = [f.strip() for f in raw.split(",") if f.strip()]
+
+        validFilters = {"hat", "addon", "tool", "face", "tshirt", "shirt", "pants"}
+        filtersArray = [f for f in filtersArray if f in validFilters]
+        filtersArray.append(self.showpieceOnly.component.values[0])
+
+        if not filtersArray:
+            self.future.set_result([])
+            return
+        
+        await interaction.response.defer(ephemeral=True)
+        self.future.set_result(filtersArray)
 
 class Users(commands.Cog):
     def __init__(self, bot):
@@ -105,38 +144,35 @@ class Users(commands.Cog):
         }
 
         equippedItems = {}
-        def createItemsField(onlyShowpieces: bool):
+        def createItemsField(itemsFilter):
+            if not itemsFilter:
+                itemsFilter = []
+
             embed.clear_fields()
             for item in currentlyResponse:
                 name = item.get("name", "???")
                 slug = item.get("slug", "N/S")
-                id = item.get("id", "N/A")
+                item_id = item.get("id", "N/A")
                 item_type = item.get("type", "")
 
+                if itemsFilter and item_type not in itemsFilter:
+                    continue
+
                 emoji = emoji_types.get(item_type, "❄️")
-                if onlyShowpieces and not showpiecesItems:
-                    return True
-                elif slug in showpiecesItems:
-                    emoji = emoji_types["showpiece"]
 
-                def createItemTypeField():
-                    if id not in equippedItems:
-                        equippedItems[item_type] = id
-
+                if item_id not in equippedItems:
+                    equippedItems[item_type] = item_id
+                
+                if (itemsFilter and itemsFilter[-1] == "true") and slug in showpiecesItems:
                     embed.add_field(
                         name=f"**{emoji} {name}**",
-                        value=(
-                            f"[**`Market Link`**](https://netisu.com/market/item/{id}/{slug})"
-                        ),
+                        value=f"[**`Market Link`**](https://netisu.com/market/item/{item_id}/{slug})",
                         inline=True
                     )
+                elif (itemsFilter and itemsFilter[-1] == "false"):
 
-                if onlyShowpieces and slug in showpiecesItems:
-                    createItemTypeField()
-                elif not onlyShowpieces:
-                    createItemTypeField()
 
-            if not onlyShowpieces:
+            if len(itemsFilter) == 0 or (itemsFilter and itemsFilter[-1] == "false"):
                 colorsArray = AvatarJsonResponse["RenderJson"]["colors"]
                 parts_order = [
                     ("Head", "Head"),
@@ -169,7 +205,7 @@ class Users(commands.Cog):
                     inline=False
                 )
 
-        createItemsField(False)
+        createItemsField(None)
 
         embed.set_thumbnail(url=f"https://cdn.netisu.com/thumbnails/{avatarHashImage}.png")
         embed.set_footer(text="Netisu Bot")
@@ -178,10 +214,17 @@ class Users(commands.Cog):
             placeholder="Avatar Options",
             options=[
                 discord.SelectOption(label="Show Normal Avatar", value="normal"),
-                discord.SelectOption(label="Show Only Showpieces", value="showpieces"),
-                discord.SelectOption(label="To estimate the price of Avatar", value="charvalue"),
+                discord.SelectOption(label="Select a filter", value="filter"),
+                discord.SelectOption(label="Estimate price of Avatar", value="charvalue"),
                 discord.SelectOption(label="Create Fetch", value="createfetch")
             ]
+        )
+
+        filters = discord.ui.TextInput(
+            label="items that will only appear",
+            placeholder="hat, addon, tool, face",
+            required=True,
+            max_length=40
         )
 
         avatarData = {
@@ -191,11 +234,19 @@ class Users(commands.Cog):
         
         async def select_callback(interaction: discord.Interaction):
             choice = menu.values[0]
-            if choice == "showpieces":
-                if createItemsField(True):
-                    await interaction.response.send_message("This player does not have any Showpiece equipped!", ephemeral=True)
-                else:
-                    await interaction.response.edit_message(embed=embed)
+            if choice == "filter":
+
+                future = asyncio.get_event_loop().create_future()
+                modal = FilterModal(future)
+                await interaction.response.send_modal(modal)
+
+                filtersItems = await future
+                createItemsField(filtersItems)
+                await interaction.followup.edit_message(embed=embed, message_id=interaction.message.id)
+                #if createItemsField(True):
+                 #   await interaction.response.send_message("This player does not have any Showpiece equipped!", ephemeral=True)
+                #else:
+                #    await interaction.response.edit_message(embed=embed)
 
             elif choice == "createfetch":
                 item_ids = [item["id"] for item in currentlyResponse]
