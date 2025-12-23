@@ -77,9 +77,7 @@ class User(commands.Cog):
         view = discord.ui.View()
         view.add_item(menu)
 
-
-
-        await Interaction.followup.send(embed=embed)
+        await Interaction.followup.send(embed=embed, view=view)
 
 async def setup(bot):
     await bot.add_cog(User(bot))
