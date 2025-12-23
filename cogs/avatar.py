@@ -6,8 +6,8 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from utils.getNetizenValue import GetSkinValue
-from utils.getNetizenValue import getUsername
+from utils.getNetizenValues import GetSkinValue
+from utils.getNetizenValues import getSearchInformations
 
 def generateFetchCode(item_ids, colors):
     return f"""async function equipFullAvatar() {{
@@ -110,15 +110,17 @@ class Avatar(commands.Cog):
         self.bot = bot
         super().__init__()
 
-    @app_commands.command(name="wearing", description="grab the skin of a selected player")
+    @app_commands.command(name="wearing", description="⎡Information⎦ grab the skin of a selected player")
     @app_commands.describe(user="Player ID whose skin/avatar you want to see")
-    async def wearing(self, OriginalInteraction: discord.Interaction, user: int):
+    async def wearing(self, interaction: discord.Interaction, user: int):
         user = str(user)
         async with httpx.AsyncClient() as client:
             currentlyResponse = (await client.get(f"https://netisu.com/api/inventory/currently-wearing/{user}")).json()
             AvatarJsonResponse = (await client.get(f"https://netisu.com/api/users/avatar-json/{user}")).json()
 
-        username = await getUsername(AvatarJsonResponse["Hash"])
+        searchInformations = await getSearchInformations(AvatarJsonResponse["Hash"])
+        username = searchInformations["name"]
+
         embed = discord.Embed(
             title=f"@{username} Currently Wearing",
             url=f"https://netisu.com/@{username}",
@@ -220,10 +222,10 @@ class Avatar(commands.Cog):
         menu = discord.ui.Select(
             placeholder="Avatar Options",
             options=[
-                discord.SelectOption(label="Show Every Items", value="normal"),
-                discord.SelectOption(label="Estimate price of Avatar", value="charvalue"),
-                discord.SelectOption(label="Create Fetch", value="createfetch"),
-                discord.SelectOption(label="Select a filter", value="filter")
+                discord.SelectOption(label="Show Every Items", description="Pick up all items that are currently equipped!", value="normal"),
+                discord.SelectOption(label="Select a filter", description="Select filters you want to see!", value="filter"),
+                discord.SelectOption(label="Estimate price of Avatar", description="It estimates how much user spent based on their items!", value="charvalue"),
+                discord.SelectOption(label="Create Fetch", description="Creates a fetch to equip user skin (I recommend saving your skin's fetch first)", value="createfetch")
             ]
         )
 
@@ -239,9 +241,9 @@ class Avatar(commands.Cog):
             "stars": -1
         }
         
-        async def select_callback(interaction: discord.Interaction):
-            if not interaction.user.id == OriginalInteraction.user.id:
-                await interaction.response.send_message("You can't mess with a UI that isn't yours", ephemeral=True)
+        async def select_callback(altInteraction: discord.Interaction):
+            if not altInteraction.user.id == interaction.user.id:
+                await altInteraction.response.send_message("You can't mess with a UI that isn't yours", ephemeral=True)
                 return
 
             choice = menu.values[0]
@@ -249,21 +251,21 @@ class Avatar(commands.Cog):
 
                 future = asyncio.get_event_loop().create_future()
                 modal = FilterModal(future)
-                await interaction.response.send_modal(modal)
+                await altInteraction.response.send_modal(modal)
 
                 filtersItems = await future
                 createItemsField(filtersItems)
-                await interaction.followup.edit_message(embed=embed, message_id=interaction.message.id)
+                await altInteraction.followup.edit_message(embed=embed, message_id=altInteraction.message.id)
             elif choice == "createfetch":
                 item_ids = [item["id"] for item in currentlyResponse]
                 colors = AvatarJsonResponse.get("RenderJson", {}).get("colors", {})
-                await interaction.response.send_message(f"```javascript\n{generateFetchCode(item_ids, colors)}\n```", ephemeral=True)
+                await altInteraction.response.send_message(f"```javascript\n{generateFetchCode(item_ids, colors)}\n```", ephemeral=True)
 
             elif choice == "charvalue":
-                await interaction.response.defer()
+                await altInteraction.response.defer()
 
                 if avatarData["sparkles"] < 0:
-                    await interaction.followup.send( "This will take a while, please wait!", ephemeral=True )
+                    await altInteraction.followup.send( "This will take a while, please wait!", ephemeral=True )
 
                     avatarData["sparkles"] = await GetSkinValue(equippedItems)
                     avatarData["stars"] = int(avatarData["sparkles"] / 10)
@@ -286,20 +288,20 @@ class Avatar(commands.Cog):
                     inline=True
                 )
 
-                await interaction.edit_original_response(
+                await altInteraction.edit_original_response(
                     content=None,
                     embed=embed
                 )
             else:
                 createItemsField(False)
-                await interaction.response.edit_message(embed=embed)
+                await altInteraction.response.edit_message(embed=embed)
 
         menu.callback = select_callback
 
         view = discord.ui.View()
         view.add_item(menu)
 
-        await OriginalInteraction.response.send_message(embed=embed, view=view)
+        await interaction.response.send_message(embed=embed, view=view)
 
 async def setup(bot):
     await bot.add_cog(Avatar(bot))
