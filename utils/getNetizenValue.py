@@ -35,7 +35,7 @@ async def getInventory(userID):
     return inventory
 
 
-async def GetProfileValue(userID, inventory):
+async def GetProfileValues(userID, inventory):
     if not inventory:
         inventory = await getInventory(userID)
 
