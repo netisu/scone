@@ -111,12 +111,12 @@ class Avatar(commands.Cog):
         super().__init__()
 
     @app_commands.command(name="wearing", description="⎡Information⎦ grab the skin of a selected player")
-    @app_commands.describe(user="Player ID whose skin/avatar you want to see")
-    async def wearing(self, interaction: discord.Interaction, user: int):
-        user = str(user)
+    @app_commands.describe(id="Player ID whose skin/avatar you want to see")
+    async def wearing(self, interaction: discord.Interaction, id: int):
+        id = str(id)
         async with httpx.AsyncClient() as client:
-            currentlyResponse = (await client.get(f"https://netisu.com/api/inventory/currently-wearing/{user}")).json()
-            AvatarJsonResponse = (await client.get(f"https://netisu.com/api/users/avatar-json/{user}")).json()
+            currentlyResponse = (await client.get(f"https://netisu.com/api/inventory/currently-wearing/{id}")).json()
+            AvatarJsonResponse = (await client.get(f"https://netisu.com/api/users/avatar-json/{id}")).json()
 
         searchInformations = await getSearchInformations(AvatarJsonResponse["Hash"])
         username = searchInformations["name"]
@@ -124,7 +124,7 @@ class Avatar(commands.Cog):
         embed = discord.Embed(
             title=f"@{username} Currently Wearing",
             url=f"https://netisu.com/@{username}",
-            description=f"> **This will retrieve all items listed in the [API](https://netisu.com/api/inventory/currently-wearing/{user})**",
+            description=f"> **This will retrieve all items listed in the [API](https://netisu.com/api/inventory/currently-wearing/{id})**",
             colour=0x6900d1
         )
         
@@ -135,7 +135,7 @@ class Avatar(commands.Cog):
             icon_url=f"https://cdn.netisu.com/thumbnails/{avatarHashImage}_headshot.png"
         )
         
-        showpiecesItems = await GetOnlyShowpieces(user, currentlyResponse)
+        showpiecesItems = await GetOnlyShowpieces(id, currentlyResponse)
         emoji_types = {
             "hat": "🎩",
             "addon": "📦",

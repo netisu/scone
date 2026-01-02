@@ -13,6 +13,9 @@ from discord.ext import commands
 from utils.getNetizenValues import getSearchInformations
 from utils.getNetizenValues import getImageHash
 
+from database.database import add_user
+from database.database import find_user
+
 RoleID = int(os.getenv("verificationRoleID"))
 
 def generateVerificationCode():
@@ -25,7 +28,7 @@ def generateVerificationCode():
 
 class VerificationView(ui.View):
     def __init__(self, userID, author_id: int, verification_code: str):
-        super().__init__(timeout=300) 
+        super().__init__(timeout=10000) 
         self.author_id = author_id
         self.userID = userID
         self.verification_code = verification_code
@@ -41,6 +44,7 @@ class VerificationView(ui.View):
 
     @ui.button(label="Verify", style=discord.ButtonStyle.success)
     async def confirm( self, interaction: discord.Interaction, button: ui.Button):
+        await interaction.response.defer(ephemeral=True)
         imageHash = await getImageHash(self.userID)
         searchInformations = await getSearchInformations(imageHash)
         if self.verification_code in searchInformations["description"]:
@@ -48,13 +52,14 @@ class VerificationView(ui.View):
             user = interaction.user
 
             await user.add_roles(role)
+            add_user(self.userID, interaction.user.id)
 
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "You have been officially verified!",
                 ephemeral=True
             )
         else:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "You didn't put the verification code on your profile!",
                 ephemeral=True
             )
@@ -63,7 +68,8 @@ class VerificationView(ui.View):
 
     @ui.button(label="Cancel", style=discord.ButtonStyle.danger)
     async def cancel(self, interaction: discord.Interaction, button: ui.Button):
-        await interaction.response.send_message(
+        await interaction.response.defer(ephemeral=True)
+        await interaction.followup.send(
             "Verification canceled!",
             ephemeral=True
         )
@@ -80,6 +86,13 @@ class Verification(commands.Cog):
     @app_commands.describe(id="Account ID you want to be verified")
 
     async def verification(self, interaction:discord.Interaction, id: int):
+        await interaction.response.defer(ephemeral=True)
+        if interaction.user.get_role(RoleID):
+            await interaction.followup.send(
+                "You are already linked with another ID!", ephemeral=True
+            )
+            return
+
         imageHash = await getImageHash(id)
         searchInformations = await getSearchInformations(imageHash)
         verificationCode = generateVerificationCode()
@@ -106,7 +119,7 @@ class Verification(commands.Cog):
             verification_code=verificationCode
         )
 
-        await interaction.response.send_message(
+        await interaction.followup.send(
             embed=embed,
             view=view,
             ephemeral=True

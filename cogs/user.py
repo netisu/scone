@@ -11,21 +11,22 @@ from utils.getNetizenValues import getImageHash
 from utils.getNetizenValues import GetProfileValues
 from utils.getNetizenValues import userIsOnline
 
+from database.database import find_user
 class User(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         super().__init__()
     
     @app_commands.command(name="user", description="⎡Information⎦ Retrieves information from the selected player")
-    @app_commands.describe(user="Player ID whose information you want to see")
+    @app_commands.describe(id="Player ID whose information you want to see")
 
-    async def user(self, interaction:discord.Interaction, user: int):
+    async def user(self, interaction:discord.Interaction, id: int):
         await interaction.response.defer()
-        user = str(user)
+        id = str(id)
 
-        headshotImageHash = await getImageHash(user)
+        headshotImageHash = await getImageHash(id)
         searchInformations = await getSearchInformations(headshotImageHash)
-        isOnline = await userIsOnline(user)
+        isOnline = await userIsOnline(id)
 
         userValues = { "inventory": {}, "priceValues": [] }
 
@@ -46,6 +47,11 @@ class User(commands.Cog):
                         value=f"**`{isOnline}`**",
                         inline=True)
         
+        discordUser = find_user(id)
+        if discordUser:
+            embed.add_field(name="**Discord user**",
+                            value=f"**<@!{discordUser["discordId"]}>**",
+                            inline=True)
         
         embed.set_thumbnail(url=f"https://cdn.netisu.com/thumbnails/{headshotImageHash}.png")
         embed.set_footer(text="Netisu Bot")
@@ -73,8 +79,8 @@ class User(commands.Cog):
                 await altInteraction.followup.send("This takes time, so in the meantime you can run other commands!", ephemeral=True)
 
                 if not userValues["inventory"]:
-                    userValues["inventory"] = await getInventory(user)
-                    userValues["priceValues"] = await GetProfileValues(user, userValues["inventory"])
+                    userValues["inventory"] = await getInventory(id)
+                    userValues["priceValues"] = await GetProfileValues(id, userValues["inventory"])
 
                 embed.add_field(name="**Items Owned**",
                                 value=f"**[`{len(userValues["inventory"])}`](https://netisu.com/@{searchInformations["name"]}/inventory)**",
